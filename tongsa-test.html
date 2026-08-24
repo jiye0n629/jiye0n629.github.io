@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>통합사회 학습 여권</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rice-paper:#F4EEDD;
+    --paper-card:#FBF8EF;
+    --sumi-ink:#232220;
+    --ink-soft:#726B57;
+    --seal-red:#B4362A;
+    --seal-red-dark:#8C2A20;
+    --jade:#3E6B57;
+    --amber:#C1873A;
+    --gold:#A98A34;
+    --line:#DCD3B8;
+    --line-strong:#C9BE9C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--rice-paper);
+    color:var(--sumi-ink);
+    font-family:'Noto Sans KR',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    opacity:0.35;
+  }
+  #app{
+    position:relative;
+    max-width:480px;
+    margin:0 auto;
+    padding:20px 16px 48px;
+    min-height:100vh;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:0.18em;
+    color:var(--seal-red);
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  h1.title{
+    font-family:'Song Myung',serif;
+    font-size:24px;
+    margin:0 0 2px;
+    line-height:1.3;
+  }
+  .sub{
+    color:var(--ink-soft);
+    font-size:13px;
+    margin:0 0 16px;
+  }
+  .card{
+    background:var(--paper-card);
+    border:1px solid var(--line-strong);
+    border-radius:6px;
+    padding:16px;
+    margin-bottom:14px;
+    position:relative;
+  }
+  .card::before, .card::after{
+    content:"";
+    position:absolute;
+    width:9px;height:9px;
+    border:1.5px solid var(--line-strong);
+    opacity:0.9;
+  }
+  .card::before{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .card::after{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+  .card-label{
+    font-size:11px;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    font-weight:700;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .streak-pill{
+    font-size:11px;
+    color:var(--seal-red);
+    font-weight:700;
+    background:rgba(180,54,42,0.08);
+    padding:3px 8px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+
+  /* 달력 (하트 출석) */
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+  }
+  .cal-dow{
+    font-size:10px;
+    color:var(--ink-soft);
+    text-align:center;
+    padding-bottom:2px;
+  }
+  .cal-cell{
+    aspect-ratio:1;
+    border:1px solid var(--line);
+    border-radius:6px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+  .cal-cell.today{ border-color:var(--seal-red); border-width:1.5px; }
+  .cal-cell.blank{ border-color:transparent; }
+  .cal-daynum{ font-size:9px; color:var(--ink-soft); position:absolute; top:2px; left:4px; }
+  .cal-heart{ font-size:15px; line-height:1; color:var(--line-strong); margin-top:3px; }
+  .cal-heart.on{ color:var(--seal-red); }
+  .cal-heart.on.pop{ animation: stampPress 420ms ease-out; }
+  @keyframes stampPress{
+    0%{ opacity:0; transform:scale(1.9); }
+    60%{ opacity:1; transform:scale(0.88); }
+    100%{ opacity:1; transform:scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .cal-heart.on.pop{ animation:none; }
+  }
+
+  .chip-row{
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+    margin-bottom:4px;
+  }
+  .chip{
+    border:1px solid var(--line-strong);
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:12.5px;
+    font-weight:700;
+    padding:8px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    line-height:1.3;
+  }
+  .chip:focus-visible{ outline:2px solid var(--seal-red); outline-offset:2px; }
+  .chip.active{ color:#fff; border-color:transparent; background:var(--sumi-ink); }
+  .chip.active.subj{ background:var(--seal-red); }
+  .chip.active.diff-하{ background:var(--jade); }
+  .chip.active.diff-중{ background:var(--amber); }
+  .chip.active.diff-상{ background:var(--gold); }
+  .chip.small{ padding:6px 10px; font-size:12px; }
+  .chip-link{
+    font-size:11.5px; color:var(--seal-red); background:none; border:none; cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif; font-weight:700; padding:2px 0;
+  }
+
+  .section-title{
+    font-size:11px; letter-spacing:0.06em; color:var(--ink-soft); font-weight:700;
+    margin:14px 0 8px;
+  }
+  .section-title:first-child{ margin-top:0; }
+
+  .btn-main{
+    width:100%;
+    background:var(--seal-red);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:15px;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:4px;
+    letter-spacing:-0.01em;
+  }
+  .btn-main:hover{ background:var(--seal-red-dark); }
+  .btn-main:focus-visible{ outline:2px solid var(--sumi-ink); outline-offset:2px; }
+  .btn-main.secondary{
+    background:transparent;
+    color:var(--sumi-ink);
+    border:1.5px solid var(--sumi-ink);
+  }
+  .btn-main.secondary:hover{ background:rgba(35,34,32,0.05); }
+  .btn-main .count{ opacity:0.85; font-weight:400; }
+  .btn-main:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  /* 퀴즈 화면 */
+  .quiz-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:8px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+    font-weight:700;
+  }
+  .quiz-meta .diff-tag{ padding:1px 7px; border-radius:20px; color:#fff; font-size:10.5px; flex-shrink:0; }
+  .diff-tag.하{ background:var(--jade); }
+  .diff-tag.중{ background:var(--amber); }
+  .diff-tag.상{ background:var(--gold); }
+  .progress-track{
+    height:4px; background:var(--line); border-radius:4px; overflow:hidden; margin-bottom:18px;
+  }
+  .progress-fill{ height:100%; background:var(--seal-red); transition:width 0.25s; }
+  .q-text{
+    font-size:17px;
+    line-height:1.55;
+    font-weight:700;
+    margin:6px 0 22px;
+  }
+  .ox-row{ display:flex; gap:12px; }
+  .ox-btn{
+    flex:1;
+    aspect-ratio:1.5;
+    border-radius:8px;
+    border:2px solid var(--line-strong);
+    background:var(--paper-card);
+    font-family:'Song Myung',serif;
+    font-size:38px;
+    color:var(--sumi-ink);
+    cursor:pointer;
+  }
+  .ox-btn:hover{ border-color:var(--sumi-ink); }
+  .choice-list{ display:flex; flex-direction:column; gap:9px; }
+  .choice-btn{
+    text-align:left;
+    padding:13px 14px;
+    border-radius:8px;
+    border:1.5px solid var(--line-strong);
+    background:var(--paper-card);
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:14.5px;
+    color:var(--sumi-ink);
+    cursor:pointer;
+    line-height:1.4;
+  }
+  .choice-btn:hover{ border-color:var(--sumi-ink); }
+  .choice-btn:disabled, .ox-btn:disabled{ cursor:default; }
+  .correct-mark{ background:rgba(62,107,87,0.12) !important; border-color:var(--jade) !important; }
+  .wrong-mark{ background:rgba(180,54,42,0.10) !important; border-color:var(--seal-red) !important; }
+
+  .feedback-box{
+    margin-top:16px;
+    padding:13px 14px;
+    border-radius:8px;
+    font-size:13px;
+    line-height:1.6;
+    display:none;
+  }
+  .feedback-box.show{ display:block; }
+  .feedback-box.correct{ background:rgba(62,107,87,0.1); color:var(--jade); }
+  .feedback-box.wrong{ background:rgba(180,54,42,0.08); color:var(--seal-red-dark); }
+  .feedback-box b{ display:block; margin-bottom:3px; font-size:13.5px; }
+  .feedback-box .explain{ color:var(--sumi-ink); opacity:0.85; }
+
+  .top-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .back-link{
+    font-size:12.5px; color:var(--ink-soft); background:none; border:none; cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif; font-weight:700; padding:4px 0;
+  }
+
+  .result-stamp{ display:flex; justify-content:center; margin:6px 0 14px; }
+  .result-stamp .big-heart{
+    font-size:64px; color:var(--seal-red); line-height:1;
+    animation: stampPress 500ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce){ .result-stamp .big-heart{ animation:none; } }
+  .result-score{ text-align:center; font-size:15px; font-weight:700; margin-bottom:4px; }
+  .result-sub{ text-align:center; font-size:12.5px; color:var(--ink-soft); margin-bottom:18px; }
+
+  .empty-state{
+    text-align:center; padding:30px 10px; color:var(--ink-soft); font-size:13.5px; line-height:1.7;
+  }
+
+  footer.note{
+    text-align:center; font-size:11px; color:var(--ink-soft); margin-top:22px; line-height:1.7;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ===================== 단원 구조 (교사용 학습지 기준) ===================== */
+const STRUCTURE = {
+  1: [
+    {major:1, title:'Ⅰ. 통합적 관점', subs:['인간, 사회, 환경을 바라보는 다양한 관점','인간, 사회, 환경 탐구에서의 통합적 관점']},
+    {major:2, title:'Ⅱ. 인간, 사회, 환경과 행복', subs:['행복의 기준과 의미','행복한 삶을 실현하기 위한 다양한 조건']},
+    {major:3, title:'Ⅲ. 자연환경과 인간', subs:['자연환경과 인간생활','자연에 대한 다양한 관점','환경 문제 해결을 위한 다양한 노력과 실천']},
+    {major:4, title:'Ⅳ. 문화와 다양성', subs:['다양한 문화권의 특징','문화 변동과 전통문화','문화 상대주의와 보편 윤리','다문화 사회와 문화적 다양성 존중']},
+    {major:5, title:'Ⅴ. 생활공간과 사회', subs:['산업화·도시화에 따른 변화','교통·통신 및 과학기술의 발달에 따른 변화','우리 지역의 공간 변화']},
+  ],
+  2: [
+    {major:1, title:'Ⅰ. 인권 보장과 헌법', subs:['인권의 의미 변화와 확장','인권 보장을 위한 헌법의 역할과 시민 참여','인권 문제의 양상과 해결 방안']},
+    {major:2, title:'Ⅱ. 사회 정의와 불평등', subs:['정의의 의미와 정의의 실질적 기준','자유주의와 공동체주의 정의관','사회 및 공간 불평등 현상과 해결 방안']},
+    {major:3, title:'Ⅲ. 시장 경제와 지속가능발전', subs:['자본주의의 역사적 전개와 시장과 정부의 관계','경제 주체의 합리적 선택과 역할','금융 생활과 의사 결정','지속가능발전을 위한 국제 무역']},
+    {major:4, title:'Ⅳ. 세계화와 평화', subs:['세계화의 다양한 양상과 문제 해결','평화의 중요성과 국제 사회의 노력','남북 분단 및 동아시아의 역사 갈등과 세계 평화']},
+    {major:5, title:'Ⅴ. 미래와 지속가능한 삶', subs:['인구 문제와 미래 사회','에너지 자원과 지속가능한 발전','미래 사회의 모습과 나의 삶']},
+  ]
+};
+
+/* ===================== 문제 은행 ===================== */
+const QUESTIONS = [
+// ── 통합사회1 · Ⅰ. 통합적 관점 ──
+{id:'q1',subject:1,major:1,sub:'인간, 사회, 환경을 바라보는 다양한 관점',difficulty:'하',type:'OX',q:'사회현상을 바라보는 관점 중 시간적 관점은 역사적 배경과 시대적 맥락에 초점을 둔다.',answer:true,explain:'시간적 관점은 사회현상이 언제, 어떤 시대적 배경에서 나타났는지에 초점을 둔다.'},
+{id:'q2',subject:1,major:1,sub:'인간, 사회, 환경을 바라보는 다양한 관점',difficulty:'중',type:'OX',q:'공간적 관점은 사회현상이 어떤 사회구조나 제도의 영향을 받았는지에 초점을 둔다.',answer:false,explain:'사회구조나 제도의 영향에 초점을 두는 것은 사회적 관점이다.'},
+{id:'q3',subject:1,major:1,sub:'인간, 사회, 환경을 바라보는 다양한 관점',difficulty:'중',type:'MC',q:'다음 설명에 해당하는 관점은? "도덕적으로 옳고 그름, 더 바람직한 것이 무엇인지를 판단하는 데 초점을 둔다."',choices:['시간적 관점','공간적 관점','사회적 관점','윤리적 관점'],answer:3,explain:'도덕적 가치와 규범을 고려하는 관점은 윤리적 관점이다.'},
+{id:'q4',subject:1,major:1,sub:'인간, 사회, 환경을 바라보는 다양한 관점',difficulty:'상',type:'MC',q:'사회적 관점에서 사회현상을 탐구할 때 던지는 질문으로 가장 적절한 것은?',choices:['사회현상은 언제 발생했는가?','어디에서 발생했는가?','법과 제도가 미치는 영향은 무엇인가?','더 바람직한 것은 무엇인가?'],answer:2,explain:'법과 제도, 사회구조의 영향을 묻는 질문은 사회적 관점에 해당한다.'},
+
+{id:'q5',subject:1,major:1,sub:'인간, 사회, 환경 탐구에서의 통합적 관점',difficulty:'하',type:'OX',q:'통합적 관점이란 시간적, 공간적, 사회적, 윤리적 관점을 함께 고려하는 것이다.',answer:true,explain:'통합적 관점은 네 가지 관점을 종합적으로 고려하여 사회현상을 이해하는 것이다.'},
+{id:'q6',subject:1,major:1,sub:'인간, 사회, 환경 탐구에서의 통합적 관점',difficulty:'중',type:'OX',q:'통합적 관점을 적용하면 사회현상을 인식할 때 자신에게 익숙한 제한된 틀에서 벗어나는 데 도움이 된다.',answer:true,explain:'통합적 관점은 특정한 시각에 갇히지 않고 다각적으로 문제를 바라보게 해 준다.'},
+{id:'q7',subject:1,major:1,sub:'인간, 사회, 환경 탐구에서의 통합적 관점',difficulty:'중',type:'MC',q:'통합적 관점을 적용한 탐구의 절차를 순서대로 나열한 것은?',choices:['해결 방안 모색 → 탐구 문제 선정 → 자료 수집 → 계획 수립','탐구 문제 선정 → 탐구 계획 수립 → 자료 수집 및 분석 → 해결 방안 모색 → 해결 방안 평가 및 선정','자료 수집 → 보고서 작성 → 탐구 문제 선정 → 계획 수립','해결 방안 평가 → 탐구 문제 선정 → 계획 수립 → 자료 수집'],answer:1,explain:'탐구 문제 선정에서 시작해 계획 수립, 자료 수집·분석, 해결 방안 모색, 평가 및 선정 순으로 진행한다.'},
+{id:'q8',subject:1,major:1,sub:'인간, 사회, 환경 탐구에서의 통합적 관점',difficulty:'상',type:'MC',q:'감염병 문제를 "14세기 흑사병 유행 당시 특정 집단이 낙인찍혔던 역사적 배경"에서 살펴보는 것은 어떤 관점에 해당하는가?',choices:['시간적 관점','공간적 관점','사회적 관점','윤리적 관점'],answer:0,explain:'특정 시대적 배경에서 문제가 어떻게 등장했는지 살펴보는 것은 시간적 관점이다.'},
+
+// ── 통합사회1 · Ⅱ. 인간, 사회, 환경과 행복 ──
+{id:'q9',subject:1,major:2,sub:'행복의 기준과 의미',difficulty:'하',type:'OX',q:'행복의 구체적 기준은 시대와 지역에 따라 다르게 나타난다.',answer:true,explain:'행복의 일반적 기준은 있지만 구체적 기준은 시대와 지역에 따라 달라진다.'},
+{id:'q10',subject:1,major:2,sub:'행복의 기준과 의미',difficulty:'중',type:'OX',q:'에피쿠로스 학파는 "이성의 명령에 따라 자연·신을 따르는 삶"을 행복이라고 보았다.',answer:false,explain:'그것은 스토아 학파의 입장이며, 에피쿠로스 학파는 육체의 고통과 마음의 불안이 없는 상태를 행복으로 보았다.'},
+{id:'q11',subject:1,major:2,sub:'행복의 기준과 의미',difficulty:'중',type:'MC',q:'다음 중 아리스토텔레스의 행복론으로 옳은 것은?',choices:['쾌락은 육체의 고통과 마음의 불안이 없는 상태이다','행복은 이성의 기능을 잘 발휘할 때, 덕에 일치하는 정신 활동을 통해 달성된다','최대 다수의 최대 행복이 옳고 그름의 기준이다','도덕법칙의 준수가 행복을 누릴 자격을 부여한다'],answer:1,explain:'아리스토텔레스는 행복을 이성의 기능을 잘 발휘하는 덕에 일치하는 활동으로 보았다.'},
+{id:'q12',subject:1,major:2,sub:'행복의 기준과 의미',difficulty:'상',type:'MC',q:'다음 설명에 해당하는 동양 사상은? "불성을 바탕으로 수행하여 고통받는 중생을 구제하고 해탈의 경지에 이르는 것을 행복으로 본다."',choices:['유교','불교','도가','공리주의'],answer:1,explain:'해탈과 수행을 통한 구제를 강조하는 것은 불교의 행복론이다.'},
+
+{id:'q13',subject:1,major:2,sub:'행복한 삶을 실현하기 위한 다양한 조건',difficulty:'하',type:'OX',q:'질 높은 정주환경은 쾌적한 자연환경과 안전하게 정비된 사회적 환경을 모두 포함한다.',answer:true,explain:'정주환경은 자연환경뿐 아니라 치안·교육·의료 등 사회적 환경까지 포함하는 개념이다.'},
+{id:'q14',subject:1,major:2,sub:'행복한 삶을 실현하기 위한 다양한 조건',difficulty:'중',type:'OX',q:'이중환의 『택리지』에서 강조한 살기 좋은 땅의 조건에는 지리, 생리, 인심, 산수가 있다.',answer:true,explain:'『택리지』는 지리, 생리, 인심, 산수를 살기 좋은 땅의 네 가지 조건으로 꼽았다.'},
+{id:'q15',subject:1,major:2,sub:'행복한 삶을 실현하기 위한 다양한 조건',difficulty:'중',type:'MC',q:'행복 실현 조건 중 "경제적 안정"에 대한 설명으로 가장 적절한 것은?',choices:['일정 수준의 소득이 없어도 항상 행복이 보장된다','개인의 자기계발 노력과 국가의 소득 보장·사회복지 제도가 함께 필요하다','경제적 안정은 행복과 무관한 요소이다','소득이 많을수록 행복은 무한히 증가한다'],answer:1,explain:'경제적 안정을 위해서는 개인의 노력과 국가의 사회복지 제도가 함께 필요하다.'},
+{id:'q16',subject:1,major:2,sub:'행복한 삶을 실현하기 위한 다양한 조건',difficulty:'상',type:'MC',q:'민주주의의 발전이 행복 실현에 기여하는 이유로 가장 적절한 것은?',choices:['시민의 자유와 권리를 보장하여 각자 원하는 삶을 추구할 수 있게 한다','국가의 의사 결정에 시민이 참여하지 못하게 한다','경제 성장만을 최우선 목표로 삼는다','소수 권력자의 뜻대로 사회를 운영한다'],answer:0,explain:'민주주의는 시민의 자유와 권리를 보장해 각자가 원하는 삶을 추구할 수 있게 한다.'},
+
+// ── 통합사회1 · Ⅲ. 자연환경과 인간 ──
+{id:'q17',subject:1,major:3,sub:'자연환경과 인간생활',difficulty:'하',type:'OX',q:'세계의 기후는 기온과 강수량을 기준으로 구분되며, 적도에서 극지방으로 갈수록 열대-건조-온대-냉대-한대 순으로 나타난다.',answer:true,explain:'기후는 기온·강수량을 기준으로 구분되며 저위도에서 고위도로 갈수록 이 순서로 나타난다.'},
+{id:'q18',subject:1,major:3,sub:'자연환경과 인간생활',difficulty:'중',type:'OX',q:'열대 기후 중 사바나 기후는 건기와 우기의 구분 없이 연중 강수량이 고르게 많다.',answer:false,explain:'연중 강수량이 많은 것은 열대우림 기후이며, 사바나 기후는 건기와 우기가 뚜렷이 구분된다.'},
+{id:'q19',subject:1,major:3,sub:'자연환경과 인간생활',difficulty:'중',type:'MC',q:'건조 기후 지역 중 스텝 기후 지역 주민들이 주로 사는 조립·분해가 쉬운 이동식 가옥은?',choices:['고상 가옥','게르','흙벽돌집','통나무집'],answer:1,explain:'스텝 기후 지역의 유목민은 게르, 유르트 같은 이동식 가옥에서 생활한다.'},
+{id:'q20',subject:1,major:3,sub:'자연환경과 인간생활',difficulty:'상',type:'MC',q:'냉대 기후 지역에 널리 분포하는 침엽수림(타이가)을 활용해 발달하는 산업은?',choices:['이동식 화전 농업','오아시스 농업','임업','혼합 농업'],answer:2,explain:'냉대 기후 지역은 타이가가 분포하는 곳을 중심으로 임업이 발달한다.'},
+
+{id:'q21',subject:1,major:3,sub:'자연에 대한 다양한 관점',difficulty:'하',type:'OX',q:'인간 중심주의는 인간과 자연을 분리하여 바라보는 이분법적 관점을 특징으로 한다.',answer:true,explain:'인간 중심주의는 인간과 자연을 분리하는 이분법적·도구적 자연관을 특징으로 한다.'},
+{id:'q22',subject:1,major:3,sub:'자연에 대한 다양한 관점',difficulty:'중',type:'OX',q:'생태 중심주의는 자연을 인간의 도구로만 여기며 자연의 내재적 가치를 인정하지 않는다.',answer:false,explain:'이는 인간 중심주의에 대한 설명이며, 생태 중심주의는 자연의 내재적 가치를 인정한다.'},
+{id:'q23',subject:1,major:3,sub:'자연에 대한 다양한 관점',difficulty:'중',type:'MC',q:'"자연이 인간에게 이롭도록 지식을 활용해야 한다"며 자연에 대한 지배를 강조한 사상가는?',choices:['베이컨','레오폴드','칸트','아퀴나스'],answer:0,explain:'베이컨은 자연 과학적 지식을 활용해 자연을 정복해야 한다고 주장하였다.'},
+{id:'q24',subject:1,major:3,sub:'자연에 대한 다양한 관점',difficulty:'상',type:'MC',q:'레오폴드의 "대지의 윤리"에 대한 설명으로 가장 적절한 것은?',choices:['인간만이 도덕적 고려의 대상이다','대지를 인간과 동식물, 토양 등이 어우러진 생명 공동체로 보고 인간에게 생태계 보전의 의무가 있다고 본다','자연은 도구적 가치만 지닌다고 본다','자연과 인간을 철저히 분리해야 한다고 본다'],answer:1,explain:'레오폴드는 대지를 생명 공동체로 보고, 인간이 생태계 안정에 이바지할 의무가 있다고 보았다.'},
+
+{id:'q25',subject:1,major:3,sub:'환경 문제 해결을 위한 다양한 노력과 실천',difficulty:'하',type:'OX',q:'환경 문제는 국가의 경계를 벗어나 전 지구적으로 나타나는 특징이 있다.',answer:true,explain:'환경 문제는 분포의 광범위성이라는 특징을 지녀 한 국가만의 문제로 그치지 않는다.'},
+{id:'q26',subject:1,major:3,sub:'환경 문제 해결을 위한 다양한 노력과 실천',difficulty:'중',type:'OX',q:'몬트리올 의정서는 온실가스 감축을 위한 선진국의 목표를 규정한 협약이다.',answer:false,explain:'몬트리올 의정서는 오존층 파괴 물질 규제 협약이며, 온실가스 감축 목표를 규정한 것은 교토 의정서이다.'},
+{id:'q27',subject:1,major:3,sub:'환경 문제 해결을 위한 다양한 노력과 실천',difficulty:'중',type:'MC',q:'환경 문제 해결을 위한 정부의 역할로 가장 적절한 것은?',choices:['전기차 보급 정책 등 법과 제도를 마련하여 지원한다','환경 감시 활동을 하지 않는다','기업의 친환경 기술 개발을 제한한다','시민 단체의 활동을 축소시킨다'],answer:0,explain:'정부는 전기차 보급 정책 등 다양한 법과 제도를 마련해 기업·개인의 실천을 지원한다.'},
+{id:'q28',subject:1,major:3,sub:'환경 문제 해결을 위한 다양한 노력과 실천',difficulty:'상',type:'MC',q:'온실가스 배출 감축에 대해 선진국과 개발도상국이 모두 참여하도록 합의한 협정은?',choices:['교토 의정서','파리 협정','바젤 협약','람사르 협약'],answer:1,explain:'파리 협정은 선진국과 개발도상국 모두가 온실가스 감축에 참여하도록 한 국가 간 합의이다.'},
+
+// ── 통합사회1 · Ⅳ. 문화와 다양성 ──
+{id:'q29',subject:1,major:4,sub:'다양한 문화권의 특징',difficulty:'하',type:'OX',q:'문화권은 문화적 특성이 유사하게 나타나 주변 지역과 구분되는 공간범위이다.',answer:true,explain:'문화권은 문화적 특성이 유사하여 다른 지역과 구별되는 공간 범위를 말한다.'},
+{id:'q30',subject:1,major:4,sub:'다양한 문화권의 특징',difficulty:'중',type:'OX',q:'이슬람교 문화권에서는 돼지고기와 술을 먹지 않으며 하루 다섯 번씩 메카를 향해 기도한다.',answer:true,explain:'이슬람교 문화권은 쿠란의 가르침에 따라 돼지고기·술을 금하고 메카를 향해 기도한다.'},
+{id:'q31',subject:1,major:4,sub:'다양한 문화권의 특징',difficulty:'중',type:'MC',q:'서로 다른 문화권이 인접하여 두 문화의 특성이 함께 나타나는 지역을 무엇이라 하는가?',choices:['점이지대','도심','위성도시','성장 거점'],answer:0,explain:'서로 다른 문화권 사이에서 두 특성이 함께 나타나는 지역을 점이지대라고 한다.'},
+{id:'q32',subject:1,major:4,sub:'다양한 문화권의 특징',difficulty:'상',type:'MC',q:'인문환경(종교)의 영향을 받아 형성된 문화권의 사례로 옳은 것은?',choices:['사막 지역의 흙집 가옥 문화','힌두교 문화권에서 소를 신성시하여 먹지 않는 문화','벼농사 지역의 쌀 음식 문화','냉대 지역의 통나무집 문화'],answer:1,explain:'소를 신성시하여 먹지 않는 것은 힌두교라는 종교(인문환경)의 영향을 받은 문화이다.'},
+
+{id:'q33',subject:1,major:4,sub:'문화 변동과 전통문화',difficulty:'하',type:'OX',q:'발명은 이미 존재하지만 알려지지 않았던 문화 요소를 찾아내는 것을 말한다.',answer:false,explain:'그것은 발견에 대한 설명이며, 발명은 이전에 없던 문화 요소를 새로 만드는 것이다.'},
+{id:'q34',subject:1,major:4,sub:'문화 변동과 전통문화',difficulty:'중',type:'OX',q:'자극 전파란 다른 사회의 문화 요소에서 아이디어를 얻어 새로운 발명이 일어나는 것이다.',answer:true,explain:'신라의 이두처럼 다른 문화의 아이디어에서 새로운 발명이 일어나는 것을 자극 전파라 한다.'},
+{id:'q35',subject:1,major:4,sub:'문화 변동과 전통문화',difficulty:'중',type:'MC',q:'기존 문화 요소와 전파된 문화가 결합하여 제3의 새로운 문화가 나타나는 문화 변동 양상은?',choices:['문화 공존','문화 융합','문화 동화','자문화 중심주의'],answer:1,explain:'두 문화가 결합해 새로운 문화 요소로 재탄생하는 것을 문화 융합이라 한다.'},
+{id:'q36',subject:1,major:4,sub:'문화 변동과 전통문화',difficulty:'상',type:'MC',q:'식민 통치처럼 정치·군사적 강제력에 의해 발생하는 문화 접변을 무엇이라 하는가?',choices:['자발적 문화접변','강제적 문화접변','직접 전파','간접 전파'],answer:1,explain:'외부의 강제적 압력에 의해 발생하는 문화 변동을 강제적 문화접변이라 한다.'},
+
+{id:'q37',subject:1,major:4,sub:'문화 상대주의와 보편 윤리',difficulty:'하',type:'OX',q:'문화 상대주의는 문화의 다양성과 특수성을 근거로 문화 간 우열을 가리지 않는 태도이다.',answer:true,explain:'문화 상대주의는 각 문화의 고유한 가치를 인정하며 문화 간 우열을 가리지 않는다.'},
+{id:'q38',subject:1,major:4,sub:'문화 상대주의와 보편 윤리',difficulty:'중',type:'OX',q:'자문화 중심주의가 심화되면 국수주의로 이어질 수 있다.',answer:true,explain:'자기 문화만 우월하다고 여기는 태도가 심해지면 국수주의로 이어질 위험이 있다.'},
+{id:'q39',subject:1,major:4,sub:'문화 상대주의와 보편 윤리',difficulty:'중',type:'MC',q:'다른 문화를 맹목적으로 동경하며 자기 문화를 열등하다고 여기는 태도는?',choices:['자문화 중심주의','문화 사대주의','문화 상대주의','극단적 문화 상대주의'],answer:1,explain:'다른 문화를 무조건 동경하고 자기 문화를 낮게 평가하는 태도를 문화 사대주의라 한다.'},
+{id:'q40',subject:1,major:4,sub:'문화 상대주의와 보편 윤리',difficulty:'상',type:'MC',q:'문화 절대주의에 속하는 태도를 모두 고른 것은?',choices:['자문화 중심주의와 문화 사대주의','문화 상대주의와 극단적 문화 상대주의','자문화 중심주의와 문화 상대주의','문화 사대주의와 극단적 문화 상대주의'],answer:0,explain:'문화를 평가하는 절대적 기준이 있다고 보는 자문화 중심주의와 문화 사대주의가 문화 절대주의에 속한다.'},
+
+{id:'q41',subject:1,major:4,sub:'다문화 사회와 문화적 다양성 존중',difficulty:'하',type:'OX',q:'다문화 사회는 인종, 언어, 종교 등 문화적 배경이 다른 다양한 집단이 함께 살아가는 사회이다.',answer:true,explain:'다문화 사회는 서로 다른 문화적 배경의 집단이 함께 어우러져 살아가는 사회를 말한다.'},
+{id:'q42',subject:1,major:4,sub:'다문화 사회와 문화적 다양성 존중',difficulty:'중',type:'OX',q:'외국인 근로자의 유입은 우리나라의 저출생·고령화로 인한 노동력 부족 문제 해결에 도움이 될 수 있다.',answer:true,explain:'외국인 근로자는 저출생·고령화로 인한 노동력 부족 문제 완화에 기여할 수 있다.'},
+{id:'q43',subject:1,major:4,sub:'다문화 사회와 문화적 다양성 존중',difficulty:'중',type:'MC',q:'상대방이 자기와 다르다는 이유만으로 무조건 경계하는 심리 상태를 가리키는 용어는?',choices:['다문화 수용성','제노포비아','문화 사대주의','글로컬라이제이션'],answer:1,explain:'제노포비아는 이방인에 대한 혐오증을 뜻하는 용어이다.'},
+{id:'q44',subject:1,major:4,sub:'다문화 사회와 문화적 다양성 존중',difficulty:'상',type:'MC',q:'다문화 사회의 부정적 측면으로 가장 적절한 것은?',choices:['다양한 문화를 접하며 삶이 풍요로워진다','새로운 문화와 기존 문화 간 차이로 갈등이 발생할 수 있다','노동력 부족 문제가 저절로 해결된다','창조적인 문화 발전의 원동력이 된다'],answer:1,explain:'서로 다른 문화 간의 차이로 편견이나 갈등이 발생할 수 있다는 점이 부정적 측면이다.'},
+
+// ── 통합사회1 · Ⅴ. 생활공간과 사회 ──
+{id:'q45',subject:1,major:5,sub:'산업화·도시화에 따른 변화',difficulty:'하',type:'OX',q:'도시화율이란 전체 인구 중 도시에 거주하는 인구의 비율을 말한다.',answer:true,explain:'도시화율은 전체 인구 대비 도시 거주 인구의 비율로 정의된다.'},
+{id:'q46',subject:1,major:5,sub:'산업화·도시화에 따른 변화',difficulty:'중',type:'OX',q:'도시 내부에서 업무와 상업 기능은 주로 주변 지역에 입지하고, 주거와 공업 기능은 도심에 집중한다.',answer:false,explain:'실제로는 반대로, 업무·상업 기능은 접근성이 좋은 도심에, 주거·공업 기능은 주변 지역에 입지한다.'},
+{id:'q47',subject:1,major:5,sub:'산업화·도시화에 따른 변화',difficulty:'중',type:'MC',q:'도심의 기능을 분담하는 2차 중심지로, 교통의 요지에 형성되며 상업·업무 기능을 담당하는 것은?',choices:['부도심','위성도시','개발제한구역','점이지대'],answer:0,explain:'부도심은 도심과 외곽을 연결하는 교통 요지에 형성되어 도심 기능의 일부를 분담한다.'},
+{id:'q48',subject:1,major:5,sub:'산업화·도시화에 따른 변화',difficulty:'상',type:'MC',q:'산업화·도시화에 따른 생활양식 변화로 가장 적절한 것은?',choices:['1차적 인간관계가 확대된다','핵가족과 1인 가구 비중이 감소한다','직업의 세분화·전문화가 나타나고 개인주의 가치관이 확산된다','공동체적 유대만 강화되고 개인주의는 사라진다'],answer:2,explain:'도시화가 진행되면 직업이 세분화·전문화되고 개인주의 가치관이 확산되는 경향이 있다.'},
+
+{id:'q49',subject:1,major:5,sub:'교통·통신 및 과학기술의 발달에 따른 변화',difficulty:'하',type:'OX',q:'정보화란 지식과 정보가 중요한 자원이 되어 사회 전반에 큰 변화가 나타나는 것을 말한다.',answer:true,explain:'정보화는 지식과 정보가 사회 전반에 큰 변화를 가져오는 중요한 자원이 되는 현상이다.'},
+{id:'q50',subject:1,major:5,sub:'교통·통신 및 과학기술의 발달에 따른 변화',difficulty:'중',type:'OX',q:'교통·통신이 발달하면 접근성이 좋아진 대도시가 주변 중소 도시의 인구나 경제력을 흡수하는 빨대 효과가 나타날 수 있다.',answer:true,explain:'교통 발달로 접근성이 좋아진 대도시가 주변 지역의 인구·경제력을 흡수하는 것을 빨대 효과라 한다.'},
+{id:'q51',subject:1,major:5,sub:'교통·통신 및 과학기술의 발달에 따른 변화',difficulty:'중',type:'MC',q:'사물인터넷, 빅데이터, 인공지능 등 지능 정보 기술이 여러 분야에 융합되어 나타나는 혁신적 변화를 무엇이라 하는가?',choices:['1차 산업혁명','2차 산업혁명','4차 산업혁명','도시화'],answer:2,explain:'지능 정보 기술이 사회·경제 전반에 융합되어 나타나는 혁신적 변화를 4차 산업혁명이라 한다.'},
+{id:'q52',subject:1,major:5,sub:'교통·통신 및 과학기술의 발달에 따른 변화',difficulty:'상',type:'MC',q:'교통·통신 및 과학기술 발달에 따른 문제점과 해결 방안의 연결로 옳지 않은 것은?',choices:['지역 격차 - 대도시 기능 분산과 기반시설 확충','생태환경 교란 - 외래 생물종 관리','디지털 범죄 - 개인 정보 보호 법률 정비','정보 격차 - 정보 기기 이용을 제한하여 접근 자체를 막음'],answer:3,explain:'정보 격차는 접근을 제한하는 것이 아니라 취약 계층의 정보 접근·활용 능력을 지원하는 방식으로 해결해야 한다.'},
+
+{id:'q53',subject:1,major:5,sub:'우리 지역의 공간 변화',difficulty:'하',type:'OX',q:'지역성이란 자연환경과 인문환경의 상호작용으로 형성된 그 지역만의 고유한 성격을 말한다.',answer:true,explain:'지역성은 자연·인문 환경의 상호작용으로 형성되는 지역 고유의 성격이다.'},
+{id:'q54',subject:1,major:5,sub:'우리 지역의 공간 변화',difficulty:'중',type:'OX',q:'지역 조사에서 신문이나 인터넷을 통해 자료를 수집하는 것은 야외조사에 해당한다.',answer:false,explain:'신문·인터넷 등을 통한 자료 수집은 실내조사에 해당하며, 야외조사는 현장에서 직접 조사하는 것이다.'},
+{id:'q55',subject:1,major:5,sub:'우리 지역의 공간 변화',difficulty:'중',type:'MC',q:'지역 조사의 일반적인 순서로 옳은 것은?',choices:['지역 정보 수집 → 계획 수립 → 분석 및 종합 → 보고서 작성','지역 조사 계획 수립 → 지역 정보 수집 → 분석 및 종합 → 보고서 작성','보고서 작성 → 계획 수립 → 정보 수집 → 분석','분석 및 종합 → 계획 수립 → 정보 수집 → 보고서 작성'],answer:1,explain:'계획 수립 후 정보를 수집하고, 분석·종합한 뒤 보고서를 작성하는 순서로 진행한다.'},
+{id:'q56',subject:1,major:5,sub:'우리 지역의 공간 변화',difficulty:'상',type:'MC',q:'지역 문제 해결을 위한 노력으로 가장 적절한 것은?',choices:['지역 주민의 참여 없이 국가가 일방적으로 결정한다','지역 주민의 적극적 참여와 지속가능성을 고려한 해결 방안을 함께 모색한다','지역 문제는 시간이 지나면 자연히 해결되므로 개입하지 않는다','지방 자치 단체의 역할을 최소화한다'],answer:1,explain:'지역 문제는 주민의 적극적 참여와 지속가능성을 고려한 해결 방안 모색이 필요하다.'},
+
+// ── 통합사회2 · Ⅰ. 인권 보장과 헌법 ──
+{id:'q57',subject:2,major:1,sub:'인권의 의미 변화와 확장',difficulty:'하',type:'OX',q:'인권의 특징 중 천부성이란 태어나면서부터 갖게 되는 당연한 권리를 의미한다.',answer:true,explain:'천부성은 태어날 때부터 하늘이 부여한 당연한 권리라는 인권의 특징이다.'},
+{id:'q58',subject:2,major:1,sub:'인권의 의미 변화와 확장',difficulty:'중',type:'OX',q:'2세대 인권은 국가의 불간섭을 요구하는 시민·정치적 권리를 의미한다.',answer:false,explain:'그것은 1세대 인권에 대한 설명이며, 2세대 인권은 경제·사회·문화적 권리이다.'},
+{id:'q59',subject:2,major:1,sub:'인권의 의미 변화와 확장',difficulty:'중',type:'MC',q:'차별받는 개인과 집단의 인권 보호에 주목하여 국경을 초월한 연대와 박애를 강조하는 전 지구적 차원의 권리는?',choices:['1세대 인권','2세대 인권','3세대 인권(연대권)','사회권'],answer:2,explain:'국경을 초월한 연대와 박애를 강조하는 권리는 3세대 인권(연대권)이다.'},
+{id:'q60',subject:2,major:1,sub:'인권의 의미 변화와 확장',difficulty:'상',type:'MC',q:'국가가 모든 사회 구성원의 인간다운 삶을 보장해야 한다는 사회권을 최초로 규정한 것은?',choices:['영국 권리장전(1689)','미국 독립선언(1776)','독일 바이마르 헌법(1919)','세계 인권 선언(1948)'],answer:2,explain:'독일 바이마르 헌법(1919)은 사회권을 최초로 규정한 헌법으로 평가된다.'},
+
+{id:'q61',subject:2,major:1,sub:'인권 보장을 위한 헌법의 역할과 시민 참여',difficulty:'하',type:'OX',q:'헌법은 국민의 인권 보호를 위한 최후의 보호막 역할을 한다.',answer:true,explain:'헌법은 국민의 기본적 인권을 보장하는 최고 규범이자 최후의 보호막이다.'},
+{id:'q62',subject:2,major:1,sub:'인권 보장을 위한 헌법의 역할과 시민 참여',difficulty:'중',type:'OX',q:'청구권은 다른 기본권이 침해되었을 때 그 구제를 국가에 요구할 수 있는 권리이다.',answer:true,explain:'청구권에는 청원권, 재판 청구권, 국가 배상 청구권 등이 있다.'},
+{id:'q63',subject:2,major:1,sub:'인권 보장을 위한 헌법의 역할과 시민 참여',difficulty:'중',type:'MC',q:'국민이 국가의 의사 결정 과정에 참여할 수 있는 권리로, 선거권과 공무 담임권 등을 포함하는 기본권은?',choices:['자유권','평등권','참정권','사회권'],answer:2,explain:'참정권은 국민이 국가의 의사 결정 과정에 참여할 수 있는 권리이다.'},
+{id:'q64',subject:2,major:1,sub:'인권 보장을 위한 헌법의 역할과 시민 참여',difficulty:'상',type:'MC',q:'헌법에 열거되지 않은 권리도 보장될 수 있는 근거가 되는 기본권으로 가장 적절한 것은?',choices:['청구권','평등권','인간의 존엄과 가치 및 행복추구권','참정권'],answer:2,explain:'인간의 존엄과 가치 및 행복추구권은 열거되지 않은 권리도 포괄적으로 보장하는 근거가 된다.'},
+
+{id:'q65',subject:2,major:1,sub:'인권 문제의 양상과 해결 방안',difficulty:'하',type:'OX',q:'사회적 소수자란 신체적·문화적 특징 때문에 다른 집단과 구별되어 차별받는 사람을 말한다.',answer:true,explain:'사회적 소수자는 신체적·문화적 특징으로 차별받으며 그 집단에 속한다는 의식을 가진 사람이다.'},
+{id:'q66',subject:2,major:1,sub:'인권 문제의 양상과 해결 방안',difficulty:'중',type:'OX',q:'청소년은 성인과 동등한 노동 조건을 적용받으며 특별한 보호를 받지 않는다.',answer:false,explain:'청소년은 위험하거나 유해한 일을 할 수 없는 등 성인보다 강한 보호를 받는다.'},
+{id:'q67',subject:2,major:1,sub:'인권 문제의 양상과 해결 방안',difficulty:'중',type:'MC',q:'다문화 가족 구성원의 삶의 질 향상과 사회 통합을 목적으로 하는 법률은?',choices:['양성평등 기본법','다문화가족지원법','장애인차별금지법','근로기준법'],answer:1,explain:'다문화가족지원법은 다문화 가족의 삶의 질 향상과 사회 통합을 목적으로 한다.'},
+{id:'q68',subject:2,major:1,sub:'인권 문제의 양상과 해결 방안',difficulty:'상',type:'MC',q:'청소년이 노동권을 부당하게 침해당했을 때 도움을 요청할 수 있는 기관으로 가장 적절한 것은?',choices:['고용노동부','국세청','기상청','특허청'],answer:0,explain:'청소년은 고용노동부, 중앙노동위원회 등에 문의하여 노동권 침해에 대응할 수 있다.'},
+
+// ── 통합사회2 · Ⅱ. 사회 정의와 불평등 ──
+{id:'q69',subject:2,major:2,sub:'정의의 의미와 정의의 실질적 기준',difficulty:'하',type:'OX',q:'분배적 정의는 사회적 가치를 마땅히 받을 사람이 받게 하여 각자의 몫을 누리게 하는 것이다.',answer:true,explain:'분배적 정의는 각자가 받을 만한 몫을 받게 하는 것을 의미한다.'},
+{id:'q70',subject:2,major:2,sub:'정의의 의미와 정의의 실질적 기준',difficulty:'중',type:'OX',q:'아리스토텔레스는 법을 준수하는 것을 특수적 정의라고 보았다.',answer:false,explain:'법을 준수하는 것은 일반적(보편적) 정의이며, 특수적 정의는 공정하고 평등한 것으로서의 정의이다.'},
+{id:'q71',subject:2,major:2,sub:'정의의 의미와 정의의 실질적 기준',difficulty:'중',type:'MC',q:'물건을 훔친 만큼 배상하게 하는 것처럼, 잘못에 대해 그만큼 보상·처벌하는 정의는?',choices:['분배적 정의','교정적 정의','교환적 정의','일반적 정의'],answer:1,explain:'해를 끼친 만큼 보상하게 하는 것은 교정적 정의에 해당한다.'},
+{id:'q72',subject:2,major:2,sub:'정의의 의미와 정의의 실질적 기준',difficulty:'상',type:'MC',q:'분배적 정의의 실질적 기준 중 "업적에 따른 분배"의 단점으로 가장 적절한 것은?',choices:['객관적으로 평가하기 쉽다','사회 발전에 기여할 동기를 제공한다','업적을 쌓기 어려운 사람은 낮은 분배를 받아 격차가 커질 수 있다','모두에게 동일한 몫을 나눠준다'],answer:2,explain:'업적에 따른 분배는 애초에 성과를 내기 어려운 사람에게 불리해 격차를 심화할 수 있다는 단점이 있다.'},
+
+{id:'q73',subject:2,major:2,sub:'자유주의와 공동체주의 정의관',difficulty:'하',type:'OX',q:'자유주의적 정의관은 개인선보다 공동선이 우선한다고 본다.',answer:false,explain:'자유주의적 정의관은 공동선보다 개인선이 우선한다고 본다.'},
+{id:'q74',subject:2,major:2,sub:'자유주의와 공동체주의 정의관',difficulty:'중',type:'OX',q:'공동체주의적 정의관에 따르면 개인은 공동체와 분리되어 독립적으로 존재할 수 없다.',answer:true,explain:'공동체주의는 인간과 삶이 공동체에 뿌리를 두고 있음을 강조한다.'},
+{id:'q75',subject:2,major:2,sub:'자유주의와 공동체주의 정의관',difficulty:'중',type:'MC',q:'"타인에게 영향을 미치지 않는 행위에 대해서는 개인의 절대적 자유를 존중해야 한다"고 주장한 사상가는?',choices:['밀','매킨타이어','샌델','롤스'],answer:0,explain:'밀은 타인에게 해를 끼치지 않는 한 개인의 절대적 자유를 존중해야 한다고 주장하였다.'},
+{id:'q76',subject:2,major:2,sub:'자유주의와 공동체주의 정의관',difficulty:'상',type:'MC',q:'샌델이 강조한 "연고적 자아"에 대한 설명으로 가장 적절한 것은?',choices:['개인은 어떤 공동체와도 무관한 무연고적 존재이다','개인은 특정 공동체의 문화와 역사의 영향을 받아 정체성을 형성하는 존재이다','개인의 자유는 절대적으로 우선한다','국가는 개인의 삶에 절대 개입해서는 안 된다'],answer:1,explain:'연고적 자아는 특정 공동체의 문화와 역사 등의 영향을 받아 정체성을 형성하는 자아를 뜻한다.'},
+
+{id:'q77',subject:2,major:2,sub:'사회 및 공간 불평등 현상과 해결 방안',difficulty:'하',type:'OX',q:'공간 불평등이란 지역 간에 사회적·경제적·문화적으로 격차가 발생하는 현상이다.',answer:true,explain:'공간 불평등은 지역 간 사회·경제·문화적 격차가 나타나는 현상이다.'},
+{id:'q78',subject:2,major:2,sub:'사회 및 공간 불평등 현상과 해결 방안',difficulty:'중',type:'OX',q:'사회 계층의 양극화는 중간 계층의 비중이 늘어나는 현상을 의미한다.',answer:false,explain:'양극화는 중간 계층의 비중이 줄고 상층과 하층의 비중이 늘어나는 현상이다.'},
+{id:'q79',subject:2,major:2,sub:'사회 및 공간 불평등 현상과 해결 방안',difficulty:'중',type:'MC',q:'성장 잠재력이 큰 지역을 집중적으로 육성해 그 효과가 주변으로 확산되기를 기대하는 지역 개발 방식은?',choices:['균형 개발','성장 거점 개발','지역 브랜드','장소 마케팅'],answer:1,explain:'성장 거점 개발은 잠재력이 큰 지역을 집중 육성해 파급 효과를 기대하는 방식이다.'},
+{id:'q80',subject:2,major:2,sub:'사회 및 공간 불평등 현상과 해결 방안',difficulty:'상',type:'MC',q:'사회적 약자와 사회적 소수자에 대한 설명으로 가장 적절한 것은?',choices:['둘은 완전히 같은 의미이다','사회적 소수자는 사회적 약자의 일부로, 차별받는 집단이라는 의식을 함께 가진 사람을 말한다','사회적 약자는 반드시 수적으로 적은 사람들을 의미한다','사회적 소수자는 경제적 격차와 무관한 개념이다'],answer:1,explain:'사회적 소수자는 사회적 약자 중에서도 차별받는 집단이라는 의식을 가진 사람을 말한다.'},
+
+// ── 통합사회2 · Ⅲ. 시장 경제와 지속가능발전 ──
+{id:'q81',subject:2,major:3,sub:'자본주의의 역사적 전개와 시장과 정부의 관계',difficulty:'하',type:'OX',q:'자본주의는 사유 재산 제도를 바탕으로 효율적인 자원 배분을 추구하는 경제 원리이다.',answer:true,explain:'자본주의는 사유 재산 제도를 바탕으로 한 경제 원리이다.'},
+{id:'q82',subject:2,major:3,sub:'자본주의의 역사적 전개와 시장과 정부의 관계',difficulty:'중',type:'OX',q:'애덤 스미스는 자유 방임주의를 강조하며 시장 가격 기능을 "보이지 않는 손"에 비유하였다.',answer:true,explain:'애덤 스미스는 자유 방임주의를 주장하며 시장의 가격 기능을 보이지 않는 손에 비유했다.'},
+{id:'q83',subject:2,major:3,sub:'자본주의의 역사적 전개와 시장과 정부의 관계',difficulty:'중',type:'MC',q:'1929년 대공황 이후 케인즈가 주장한, 국가가 적극적으로 시장에 개입해야 한다는 입장은?',choices:['상업 자본주의','산업 자본주의','수정 자본주의','신자유주의'],answer:2,explain:'케인즈는 대공황 이후 국가의 적극적 시장 개입을 강조하는 수정 자본주의를 주장하였다.'},
+{id:'q84',subject:2,major:3,sub:'자본주의의 역사적 전개와 시장과 정부의 관계',difficulty:'상',type:'MC',q:'1970년대 석유 파동 이후 등장한, 정부의 지나친 시장 개입을 비판하고 민영화·규제 완화를 강조한 사조는?',choices:['수정 자본주의','신자유주의','중상주의','상업 자본주의'],answer:1,explain:'신자유주의는 정부 실패를 지적하며 민영화, 규제 완화, 자유 무역을 지향한다.'},
+
+{id:'q85',subject:2,major:3,sub:'경제 주체의 합리적 선택과 역할',difficulty:'하',type:'OX',q:'합리적 선택이란 최소한의 비용으로 최대의 편익을 얻을 수 있도록 선택하는 것이다.',answer:true,explain:'합리적 선택은 최소 비용으로 최대 편익을 얻는 선택을 뜻한다.'},
+{id:'q86',subject:2,major:3,sub:'경제 주체의 합리적 선택과 역할',difficulty:'중',type:'OX',q:'합리적 선택을 할 때는 매몰 비용을 반드시 고려해야 한다.',answer:false,explain:'매몰 비용은 이미 회수할 수 없는 비용으로, 합리적 선택 시에는 고려하지 말아야 한다.'},
+{id:'q87',subject:2,major:3,sub:'경제 주체의 합리적 선택과 역할',difficulty:'중',type:'MC',q:'기회비용에 대한 설명으로 옳은 것은?',choices:['명시적 비용만을 의미한다','암묵적 비용만을 의미한다','명시적 비용과 암묵적 비용을 합한 것이다','이미 지출하여 회수할 수 없는 비용이다'],answer:2,explain:'기회비용은 명시적 비용과 암묵적 비용을 합한 것이다.'},
+{id:'q88',subject:2,major:3,sub:'경제 주체의 합리적 선택과 역할',difficulty:'상',type:'MC',q:'시장 실패의 원인 중 "공공재"의 특성으로 인해 발생하는 문제로 가장 적절한 것은?',choices:['무임승차자 문제','과도한 경쟁','물가 상승','환율 변동'],answer:0,explain:'공공재는 비경합성·비배제성으로 인해 무임승차자 문제가 발생한다.'},
+
+{id:'q89',subject:2,major:3,sub:'금융 생활과 의사 결정',difficulty:'하',type:'OX',q:'예금은 다른 금융 자산보다 안전성과 유동성이 높지만 수익성은 낮은 편이다.',answer:true,explain:'예금은 안전성과 유동성이 높은 대신 수익성은 낮은 금융 자산이다.'},
+{id:'q90',subject:2,major:3,sub:'금융 생활과 의사 결정',difficulty:'중',type:'OX',q:'주식은 예금이나 채권보다 안전성은 높고 수익성은 낮은 편이다.',answer:false,explain:'주식은 예금·채권보다 수익성은 높지만 안전성은 낮은 편이다.'},
+{id:'q91',subject:2,major:3,sub:'금융 생활과 의사 결정',difficulty:'중',type:'MC',q:'주식회사로부터 이익의 일부를 분배받는 것을 무엇이라 하는가?',choices:['이자','배당금','보험료','연금'],answer:1,explain:'주주는 주식회사로부터 배당금을 받을 수 있다.'},
+{id:'q92',subject:2,major:3,sub:'금융 생활과 의사 결정',difficulty:'상',type:'MC',q:'노후 대비를 위해 소득을 적립해 두었다가 은퇴 이후 일정 금액을 받는 금융 자산은?',choices:['채권','펀드','연금','보험'],answer:2,explain:'연금은 노후 대비를 위해 소득을 적립하고 은퇴 이후 받는 금융 자산이다.'},
+
+{id:'q93',subject:2,major:3,sub:'지속가능발전을 위한 국제 무역',difficulty:'하',type:'OX',q:'국제 분업이란 각 나라가 무역에 유리한 상품을 특화하여 생산하는 것이다.',answer:true,explain:'국제 분업은 각국이 비교 우위가 있는 상품에 특화하여 생산하는 것이다.'},
+{id:'q94',subject:2,major:3,sub:'지속가능발전을 위한 국제 무역',difficulty:'중',type:'OX',q:'비교 우위론은 애덤 스미스가 주장하였고, 절대 우위론은 데이비드 리카르도가 주장하였다.',answer:false,explain:'반대로 절대 우위론은 애덤 스미스가, 비교 우위론은 데이비드 리카르도가 주장하였다.'},
+{id:'q95',subject:2,major:3,sub:'지속가능발전을 위한 국제 무역',difficulty:'중',type:'MC',q:'같은 상품을 더 적은 기회비용으로 생산할 수 있을 때 가지는 우위를 무엇이라 하는가?',choices:['절대 우위','비교 우위','규모의 경제','특화'],answer:1,explain:'더 적은 기회비용으로 생산할 수 있는 경우를 비교 우위라 한다.'},
+{id:'q96',subject:2,major:3,sub:'지속가능발전을 위한 국제 무역',difficulty:'상',type:'MC',q:'국제 무역의 이익으로 보기 어려운 것은?',choices:['소비자는 싼 가격에 다양한 상품을 소비할 수 있다','기업은 대량 생산을 통한 규모의 경제를 달성할 수 있다','국가는 자원 및 기술력 부족 문제를 해결하기 어려워진다','경제 전체의 효율성이 증대된다'],answer:2,explain:'국제 무역은 오히려 자원·기술력 부족 문제 해결에 도움을 준다.'},
+
+// ── 통합사회2 · Ⅳ. 세계화와 평화 ──
+{id:'q97',subject:2,major:4,sub:'세계화의 다양한 양상과 문제 해결',difficulty:'하',type:'OX',q:'세계화란 국가의 경계를 넘어 세계가 하나로 통합되어 가는 현상을 말한다.',answer:true,explain:'세계화는 지역 간 상호 의존성이 높아지고 세계가 하나로 통합되어 가는 현상이다.'},
+{id:'q98',subject:2,major:4,sub:'세계화의 다양한 양상과 문제 해결',difficulty:'중',type:'OX',q:'지역화 전략에는 지역 브랜드, 장소 마케팅, 지리적 표시제 등이 있다.',answer:true,explain:'지역화 전략에는 지역 브랜드, 장소 마케팅, 지리적 표시제 등이 포함된다.'},
+{id:'q99',subject:2,major:4,sub:'세계화의 다양한 양상과 문제 해결',difficulty:'중',type:'MC',q:'가장 지역적인 것이 세계적인 것이 되고, 세계적인 것이 지역적으로도 인정받는 세계화·지역화의 상호 보완적 관계를 가리키는 말은?',choices:['글로컬라이제이션','지리적 표시제','장소 마케팅','제노포비아'],answer:0,explain:'세계화와 지역화가 동시에 이루어지는 상호 보완적 관계를 글로컬라이제이션이라 한다.'},
+{id:'q100',subject:2,major:4,sub:'세계화의 다양한 양상과 문제 해결',difficulty:'상',type:'MC',q:'지리적 표시제에 대한 설명으로 가장 적절한 것은?',choices:['모든 상품에 동일하게 적용되는 국제 표준이다','상품의 품질과 특성이 생산지 환경에서 비롯됨을 인정해 지역 이름을 상표권으로 보호하는 제도이다','다국적 기업의 브랜드 로고를 의미한다','세계도시를 지정하는 제도이다'],answer:1,explain:'지리적 표시제는 상품의 품질이 생산지 환경에서 비롯됨을 인정해 지역명을 상표권으로 보호하는 제도이다.'},
+
+{id:'q101',subject:2,major:4,sub:'평화의 중요성과 국제 사회의 노력',difficulty:'하',type:'OX',q:'소극적 평화는 전쟁이나 테러와 같은 직접적·물리적 폭력이 없는 상태를 의미한다.',answer:true,explain:'소극적 평화는 직접적·물리적 폭력이 없는 상태를 뜻한다.'},
+{id:'q102',subject:2,major:4,sub:'평화의 중요성과 국제 사회의 노력',difficulty:'중',type:'OX',q:'갈퉁은 직접적 폭력만 사라지면 적극적 평화가 실현된다고 보았다.',answer:false,explain:'갈퉁은 구조적 폭력과 문화적 폭력까지 제거되어야 진정한 적극적 평화라고 보았다.'},
+{id:'q103',subject:2,major:4,sub:'평화의 중요성과 국제 사회의 노력',difficulty:'중',type:'MC',q:'"싸우지 않고 이기는 것이 진정한 승리"라고 하여 갈퉁이 평화의 창시자라 부른 사상가는?',choices:['손무','칸트','롤스','밀'],answer:0,explain:'갈퉁은 손무를 평화의 창시자라고 언급하였다.'},
+{id:'q104',subject:2,major:4,sub:'평화의 중요성과 국제 사회의 노력',difficulty:'상',type:'MC',q:'국제 사회의 갈등을 평화적으로 해결하기 위한 노력으로 가장 적절한 것은?',choices:['갈등 당사국 간 협력과 국제기구를 통한 조정','군사력을 통한 일방적 해결','국제 협약 체결 거부','타국과의 교류 전면 중단'],answer:0,explain:'국제 갈등은 당사국 간 협력과 국제기구를 통한 조정 등으로 평화적으로 해결해야 한다.'},
+
+{id:'q105',subject:2,major:4,sub:'남북 분단 및 동아시아의 역사 갈등과 세계 평화',difficulty:'하',type:'OX',q:'남북 분단의 국제적 배경에는 미국과 소련 간의 냉전 대결이 있다.',answer:true,explain:'남북 분단은 제2차 세계 대전 이후 미국과 소련의 냉전 대결을 국제적 배경으로 한다.'},
+{id:'q106',subject:2,major:4,sub:'남북 분단 및 동아시아의 역사 갈등과 세계 평화',difficulty:'중',type:'OX',q:'1948년 남한만의 5·10 총선거를 통해 대한민국 정부가 수립되었다.',answer:true,explain:'1948년 5·10 총선거 이후 대한민국 정부가 수립되었다.'},
+{id:'q107',subject:2,major:4,sub:'남북 분단 및 동아시아의 역사 갈등과 세계 평화',difficulty:'중',type:'MC',q:'1945년 12월 한반도 신탁 통치가 결정된 회의는?',choices:['카이로 회담','모스크바 3국 외상 회의','얄타 회담','포츠담 회담'],answer:1,explain:'1945년 12월 모스크바 3국 외상 회의에서 신탁 통치가 결정되었다.'},
+{id:'q108',subject:2,major:4,sub:'남북 분단 및 동아시아의 역사 갈등과 세계 평화',difficulty:'상',type:'MC',q:'평화통일의 필요성으로 보기 어려운 것은?',choices:['이산가족의 아픔 해소','군사 대립 비용 감소와 경제 발전','군사적 긴장을 계속 유지해 대립 구도를 강화','유라시아를 연결하는 물류 중심지로 성장'],answer:2,explain:'평화통일은 군사적 긴장 완화와 신뢰 회복을 추구하는 것이지, 대립 구도 강화를 목표로 하지 않는다.'},
+
+// ── 통합사회2 · Ⅴ. 미래와 지속가능한 삶 ──
+{id:'q109',subject:2,major:5,sub:'인구 문제와 미래 사회',difficulty:'하',type:'OX',q:'세계 인구의 90% 이상이 북반구에 거주한다.',answer:true,explain:'세계 인구는 불균등하게 분포하며 90% 이상이 북반구에 거주한다.'},
+{id:'q110',subject:2,major:5,sub:'인구 문제와 미래 사회',difficulty:'중',type:'OX',q:'개발도상국은 선진국보다 유소년층 인구 비율이 낮은 편이다.',answer:false,explain:'개발도상국은 출생률이 높아 선진국보다 유소년층 인구 비율이 높은 편이다.'},
+{id:'q111',subject:2,major:5,sub:'인구 문제와 미래 사회',difficulty:'중',type:'MC',q:'청장년층 인구에 대한 유소년 인구와 노년 인구의 비율을 나타내는 지표는?',choices:['성비','인구 부양비','도시화율','출생률'],answer:1,explain:'인구 부양비는 청장년층 인구 대비 유소년·노년 인구의 비율이다.'},
+{id:'q112',subject:2,major:5,sub:'인구 문제와 미래 사회',difficulty:'상',type:'MC',q:'인구 밀집 지역의 특징으로 가장 적절한 것은?',choices:['건조·한대 기후 지역','험준한 산지와 사막 지역','북반구 중위도의 냉·온대 기후 지역이며 산업이 발달해 일자리가 풍부한 곳','인구가 거의 살지 않는 밀림 지역'],answer:2,explain:'인구 밀집 지역은 냉·온대 기후의 평야나 해안, 일자리가 풍부한 대도시 등이다.'},
+
+{id:'q113',subject:2,major:5,sub:'에너지 자원과 지속가능한 발전',difficulty:'하',type:'OX',q:'석탄, 석유, 천연가스와 같은 화석 에너지는 오늘날 인류가 가장 많이 사용하는 에너지원이다.',answer:true,explain:'화석 에너지는 현재 인류가 가장 많이 사용하는 에너지 자원이다.'},
+{id:'q114',subject:2,major:5,sub:'에너지 자원과 지속가능한 발전',difficulty:'중',type:'OX',q:'세계 석유 매장량의 절반 가량은 서남아시아에 분포한다.',answer:true,explain:'세계 석유 매장량의 절반 정도가 서남아시아에 집중되어 있다.'},
+{id:'q115',subject:2,major:5,sub:'에너지 자원과 지속가능한 발전',difficulty:'중',type:'MC',q:'현재 세계에서 소비량이 가장 많은 에너지 자원으로, 운송 수단의 연료로 널리 쓰이는 것은?',choices:['석탄','석유','천연가스','신재생 에너지'],answer:1,explain:'석유는 현재 세계에서 소비량이 가장 많은 에너지 자원이다.'},
+{id:'q116',subject:2,major:5,sub:'에너지 자원과 지속가능한 발전',difficulty:'상',type:'MC',q:'화석 에너지의 특징으로 옳지 않은 것은?',choices:['특정 지역에 편재되어 분포한다','생산지와 소비지가 불일치하는 경우가 많다','국제 이동이 활발하게 이루어진다','오염 물질을 전혀 배출하지 않는다'],answer:3,explain:'화석 에너지는 연소 시 오염 물질을 배출하며, 이 점이 신재생 에너지와의 주요 차이점이다.'},
+
+{id:'q117',subject:2,major:5,sub:'미래 사회의 모습과 나의 삶',difficulty:'하',type:'OX',q:'지능 정보 기술의 발달로 모든 사물이 인간과 연결되는 초연결 사회가 나타나고 있다.',answer:true,explain:'지능 정보 기술의 발달로 사물과 인간이 연결되는 초연결 사회가 확대되고 있다.'},
+{id:'q118',subject:2,major:5,sub:'미래 사회의 모습과 나의 삶',difficulty:'중',type:'OX',q:'세계시민 의식이란 스스로를 지역, 국가, 지구촌과 연결된 존재로 인식하는 것이다.',answer:true,explain:'세계시민 의식은 자신을 지역·국가·지구촌과 연결된 세계시민으로 인식하는 것을 말한다.'},
+{id:'q119',subject:2,major:5,sub:'미래 사회의 모습과 나의 삶',difficulty:'중',type:'MC',q:'인공지능 및 로봇 기술 발달의 부정적 영향으로 가장 적절한 것은?',choices:['삶의 편리성 증대','개인 정보 유출과 일자리 경쟁 심화','식량 생산량 증가','인간 수명 연장'],answer:1,explain:'인공지능·로봇 기술 발달은 개인 정보 유출, 사생활 침해, 일자리 경쟁 심화 등의 문제를 낳을 수 있다.'},
+{id:'q120',subject:2,major:5,sub:'미래 사회의 모습과 나의 삶',difficulty:'상',type:'MC',q:'생명 및 유전 공학 발달에 따른 문제점으로 가장 적절한 것은?',choices:['식량 생산량이 감소한다','유전자 조작이나 복제에 따른 윤리적 문제가 발생할 수 있다','인간의 수명이 단축된다','환경 오염이 완전히 사라진다'],answer:1,explain:'생명·유전 공학의 발달은 유전자 조작·복제에 따른 윤리적 문제를 낳을 수 있다.'},
+];
+
+/* ===================== 상태 관리 ===================== */
+const STORAGE_KEY = 'jd-passport-state-v2';
+const QUESTIONS_PER_SESSION = 5;
+
+let STATE = null;
+let session = null;
+
+function defaultState(){
+  return {
+    attendance:{},
+    wrongList:[],
+    settings:{ subject:1, major:'all', subs:[], difficulty:'전체' }
+  };
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    STATE = res && res.value ? JSON.parse(res.value) : defaultState();
+  }catch(e){
+    STATE = defaultState();
+  }
+  if(!STATE.attendance) STATE.attendance = {};
+  if(!STATE.wrongList) STATE.wrongList = [];
+  if(!STATE.settings) STATE.settings = { subject:1, major:'all', subs:[], difficulty:'전체' };
+  if(!STATE.settings.subs || STATE.settings.subs.length===0){
+    STATE.settings.subs = visibleSubs(STATE.settings.subject, STATE.settings.major);
+  }
+}
+
+async function saveState(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(STATE), false); }catch(e){}
+}
+
+function dateKey(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function todayKey(){ return dateKey(new Date()); }
+
+function calcStreak(){
+  let cursor = new Date();
+  let k = dateKey(cursor);
+  if(!STATE.attendance[k]){ cursor.setDate(cursor.getDate()-1); }
+  let streak = 0;
+  while(true){
+    k = dateKey(cursor);
+    if(STATE.attendance[k]){ streak++; cursor.setDate(cursor.getDate()-1); }
+    else break;
+  }
+  return streak;
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function visibleSubs(subject, major){
+  const majors = STRUCTURE[subject] || [];
+  if(major==='all') return majors.flatMap(m=>m.subs);
+  const m = majors.find(m=>m.major===Number(major));
+  return m ? m.subs.slice() : [];
+}
+
+function filteredQuestions(){
+  const {subject, subs, difficulty} = STATE.settings;
+  const set = new Set(subs);
+  return QUESTIONS.filter(q =>
+    q.subject===Number(subject) &&
+    set.has(q.sub) &&
+    (difficulty==='전체' || q.difficulty===difficulty)
+  );
+}
+
+/* ===================== 렌더링 ===================== */
+const app = document.getElementById('app');
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderHome(justStamped){
+  const streak = calcStreak();
+  const {subject, major, subs, difficulty} = STATE.settings;
+  const wrongCount = STATE.wrongList.length;
+  const majors = STRUCTURE[subject];
+  const currentSubs = visibleSubs(subject, major);
+  const allSelected = currentSubs.length>0 && currentSubs.every(s=>subs.includes(s));
+
+  app.innerHTML = `
+    <div class="eyebrow">STUDY PASSPORT</div>
+    <h1 class="title">통합사회 학습 여권</h1>
+    <p class="sub">문제를 풀 때마다 오늘 칸에 하트가 채워져요.</p>
+
+    <div class="card">
+      <div class="card-label">
+        <span>이번 달 출석부</span>
+        <span class="streak-pill">연속 ${streak}일째</span>
+      </div>
+      ${renderCalendar()}
+    </div>
+
+    <div class="card">
+      <div class="section-title">과목</div>
+      <div class="chip-row">
+        <button class="chip subj ${subject===1?'active':''}" data-subj="1">통합사회1</button>
+        <button class="chip subj ${subject===2?'active':''}" data-subj="2">통합사회2</button>
+      </div>
+
+      <div class="section-title">대단원</div>
+      <div class="chip-row">
+        <button class="chip small ${major==='all'?'active':''}" data-major="all">전체</button>
+        ${majors.map(m=>`<button class="chip small ${String(major)===String(m.major)?'active':''}" data-major="${m.major}">${m.major}단원</button>`).join('')}
+      </div>
+
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>중단원</span>
+        <button class="chip-link" data-action="toggle-all-subs">${allSelected?'전체 해제':'전체 선택'}</button>
+      </div>
+      <div class="chip-row">
+        ${currentSubs.map(s=>`<button class="chip small ${subs.includes(s)?'active':''}" data-sub="${esc(s)}">${esc(s)}</button>`).join('')}
+      </div>
+
+      <div class="section-title">난이도</div>
+      <div class="chip-row">
+        <button class="chip ${difficulty==='전체'?'active':''}" data-diff="전체">전체</button>
+        <button class="chip diff-하 ${difficulty==='하'?'active':''}" data-diff="하">하</button>
+        <button class="chip diff-중 ${difficulty==='중'?'active':''}" data-diff="중">중</button>
+        <button class="chip diff-상 ${difficulty==='상'?'active':''}" data-diff="상">상</button>
+      </div>
+
+      <button class="btn-main" data-action="start-daily" style="margin-top:14px;">
+        퀴즈 시작 <span class="count">· 최대 ${QUESTIONS_PER_SESSION}문제</span>
+      </button>
+      <button class="btn-main secondary" data-action="start-review" style="margin-top:8px;" ${wrongCount===0?'disabled':''}>
+        오답노트 복습 <span class="count">(${wrongCount})</span>
+      </button>
+    </div>
+
+    <footer class="note">통합사회1·2 각 5개 대단원, 총 ${QUESTIONS.length}문항으로 구성되어 있어요.</footer>
+  `;
+}
+
+function renderCalendar(){
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const firstDow = new Date(year,month,1).getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+  const dows = ['일','월','화','수','목','금','토'];
+  let html = '<div class="cal-grid">';
+  dows.forEach(d=> html += `<div class="cal-dow">${d}</div>`);
+  for(let i=0;i<firstDow;i++) html += `<div class="cal-cell blank"></div>`;
+  const todayD = now.getDate();
+  for(let day=1; day<=daysInMonth; day++){
+    const k = dateKey(new Date(year,month,day));
+    const on = !!STATE.attendance[k];
+    const isToday = day===todayD;
+    const pop = (isToday && window.__justStamped) ? ' pop' : '';
+    html += `<div class="cal-cell ${isToday?'today':''}"><span class="cal-daynum">${day}</span><span class="cal-heart ${on?'on':''}${on?pop:''}">♥</span></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderQuizEmpty(){
+  app.innerHTML = `
+    <div class="top-nav">
+      <button class="back-link" data-action="home">← 여권으로</button>
+    </div>
+    <div class="card">
+      <div class="empty-state">선택한 범위에 맞는 문제가 부족해요.<br>중단원이나 난이도 범위를 넓혀보세요.</div>
+    </div>
+  `;
+}
+
+function startSession(mode){
+  let pool;
+  if(mode==='review'){
+    const ids = new Set(STATE.wrongList.map(w=>w.id));
+    pool = QUESTIONS.filter(q => ids.has(q.id));
+  } else {
+    pool = filteredQuestions();
+  }
+  if(pool.length < 2){ renderQuizEmpty(); return; }
+  const n = Math.min(QUESTIONS_PER_SESSION, pool.length);
+  const picked = shuffle(pool).slice(0, mode==='review' ? Math.min(10,pool.length) : n);
+
+  session = { mode, questions:picked, index:0, correctCount:0, answered:false, newlyWrong:[], clearedWrongIds:[] };
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = session.questions[session.index];
+  const total = session.questions.length;
+  const pct = Math.round((session.index / total) * 100);
+
+  let answerAreaHtml = '';
+  if(q.type==='OX'){
+    answerAreaHtml = `
+      <div class="ox-row">
+        <button class="ox-btn" data-ox="true">O</button>
+        <button class="ox-btn" data-ox="false">X</button>
+      </div>`;
+  } else {
+    answerAreaHtml = `
+      <div class="choice-list">
+        ${q.choices.map((c,i)=>`<button class="choice-btn" data-choice="${i}">${esc(c)}</button>`).join('')}
+      </div>`;
+  }
+
+  app.innerHTML = `
+    <div class="top-nav">
+      <button class="back-link" data-action="home">← 그만하기</button>
+      <span class="back-link" style="cursor:default;color:var(--ink-soft);">${session.mode==='review'?'오답노트':'퀴즈'}</span>
+    </div>
+    <div class="card">
+      <div class="quiz-meta">
+        <span>${session.index+1} / ${total} · 통합사회${q.subject} · ${esc(q.sub)}</span>
+        <span class="diff-tag ${q.difficulty}">${q.difficulty}</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      <div class="q-text">${esc(q.q)}</div>
+      ${answerAreaHtml}
+      <div class="feedback-box" id="feedback"></div>
+      <button class="btn-main" data-action="next" style="display:none;margin-top:14px;" id="nextBtn">다음</button>
+    </div>
+  `;
+}
+
+function submitAnswer(userAnswer){
+  if(session.answered) return;
+  session.answered = true;
+  const q = session.questions[session.index];
+  const isCorrect = (userAnswer===q.answer);
+
+  if(q.type==='OX'){
+    document.querySelectorAll('.ox-btn').forEach(btn=>{
+      btn.disabled = true;
+      const v = btn.dataset.ox === 'true';
+      if(v===q.answer) btn.classList.add('correct-mark');
+      else if(v===userAnswer) btn.classList.add('wrong-mark');
+    });
+  } else {
+    document.querySelectorAll('.choice-btn').forEach(btn=>{
+      btn.disabled = true;
+      const idx = Number(btn.dataset.choice);
+      if(idx===q.answer) btn.classList.add('correct-mark');
+      else if(idx===userAnswer) btn.classList.add('wrong-mark');
+    });
+  }
+
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback-box show ' + (isCorrect ? 'correct' : 'wrong');
+  fb.innerHTML = `<b>${isCorrect? '정답이에요!' : '아쉬워요, 오답이에요.'}</b><span class="explain">${esc(q.explain)}</span>`;
+  document.getElementById('nextBtn').style.display = 'block';
+
+  if(isCorrect){
+    session.correctCount++;
+    if(session.mode==='review') session.clearedWrongIds.push(q.id);
+  } else {
+    if(session.mode!=='review') session.newlyWrong.push(q.id);
+  }
+}
+
+function nextQuestion(){
+  if(session.index < session.questions.length - 1){
+    session.index++;
+    session.answered = false;
+    renderQuestion();
+  } else {
+    finishSession();
+  }
+}
+
+async function finishSession(){
+  const total = session.questions.length;
+  const score = session.correctCount;
+  const wasAlreadyStamped = !!STATE.attendance[todayKey()];
+
+  STATE.attendance[todayKey()] = true;
+
+  if(session.mode==='daily'){
+    session.newlyWrong.forEach(id=>{
+      const existing = STATE.wrongList.find(w=>w.id===id);
+      if(existing){ existing.missCount = (existing.missCount||1)+1; existing.lastMissed = todayKey(); }
+      else { STATE.wrongList.push({id, missCount:1, lastMissed:todayKey()}); }
+    });
+  } else if(session.mode==='review'){
+    if(session.clearedWrongIds.length){
+      STATE.wrongList = STATE.wrongList.filter(w => !session.clearedWrongIds.includes(w.id));
+    }
+  }
+
+  await saveState();
+  window.__justStamped = !wasAlreadyStamped;
+
+  const stampedText = !wasAlreadyStamped
+    ? '오늘의 하트를 채웠어요!'
+    : (session.mode==='review' ? '오답노트를 복습했어요' : '오늘 하트는 이미 채워져 있어요');
+
+  app.innerHTML = `
+    <div class="card" style="margin-top:10px;">
+      <div class="result-stamp"><span class="big-heart">♥</span></div>
+      <div class="result-score">${total}문제 중 ${score}개 정답</div>
+      <div class="result-sub">${stampedText}</div>
+      <button class="btn-main" data-action="home">여권으로 돌아가기</button>
+    </div>
+  `;
+}
+
+/* ===================== 이벤트 처리 ===================== */
+document.addEventListener('click', async (e)=>{
+  const t = e.target;
+
+  if(t.matches('[data-subj]')){
+    const v = Number(t.dataset.subj);
+    STATE.settings.subject = v;
+    STATE.settings.major = 'all';
+    STATE.settings.subs = visibleSubs(v, 'all');
+    await saveState();
+    renderHome();
+    return;
+  }
+  if(t.matches('[data-major]')){
+    const v = t.dataset.major === 'all' ? 'all' : Number(t.dataset.major);
+    STATE.settings.major = v;
+    STATE.settings.subs = visibleSubs(STATE.settings.subject, v);
+    await saveState();
+    renderHome();
+    return;
+  }
+  if(t.matches('[data-sub]')){
+    const s = t.dataset.sub;
+    const idx = STATE.settings.subs.indexOf(s);
+    if(idx===-1) STATE.settings.subs.push(s);
+    else {
+      if(STATE.settings.subs.length>1) STATE.settings.subs.splice(idx,1);
+    }
+    await saveState();
+    renderHome();
+    return;
+  }
+  if(t.matches('[data-action="toggle-all-subs"]')){
+    const cur = visibleSubs(STATE.settings.subject, STATE.settings.major);
+    const allSel = cur.every(s=>STATE.settings.subs.includes(s));
+    STATE.settings.subs = allSel ? [cur[0]] : cur.slice();
+    await saveState();
+    renderHome();
+    return;
+  }
+  if(t.matches('[data-diff]')){
+    STATE.settings.difficulty = t.dataset.diff;
+    await saveState();
+    renderHome();
+    return;
+  }
+  if(t.matches('[data-action="start-daily"]')){
+    startSession('daily');
+    return;
+  }
+  if(t.matches('[data-action="start-review"]')){
+    if(STATE.wrongList.length===0) return;
+    startSession('review');
+    return;
+  }
+  if(t.matches('[data-action="home"]')){
+    renderHome();
+    window.__justStamped = false;
+    return;
+  }
+  if(t.matches('[data-ox]')){
+    submitAnswer(t.dataset.ox === 'true');
+    return;
+  }
+  if(t.matches('[data-choice]')){
+    submitAnswer(Number(t.dataset.choice));
+    return;
+  }
+  if(t.matches('[data-action="next"]')){
+    nextQuestion();
+    return;
+  }
+});
+
+/* ===================== 초기화 ===================== */
+(async function init(){
+  app.innerHTML = `<div class="card"><div class="empty-state">여권을 펼치는 중...</div></div>`;
+  await loadState();
+  renderHome();
+})();
+</script>
+</body>
+</html>
